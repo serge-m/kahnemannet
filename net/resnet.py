@@ -88,21 +88,21 @@ Block = Union[BasicBlock, Bottleneck]
 
 
 class ResNet(nn.Module):
-    def __init__(self, depth, num_classes, block_name='BasicBlock'):
+    def __init__(self, depth, num_classes, block_name='BasicBlock', inplanes=16):
         super().__init__()
         n, block = _depth_and_block(block_name, depth)
 
-        self.inplanes = 16
+        self.inplanes = inplanes
 
-        self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=3, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(self.inplanes)
+        self.conv1 = nn.Conv2d(3, inplanes, kernel_size=3, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(inplanes)
         self.relu = nn.ReLU(inplace=True)
 
-        self.layer1 = self._make_layer(block, planes=self.inplanes, blocks=n, stride=1)
-        self.layer2 = self._make_layer(block, planes=32, blocks=n, stride=2)
-        self.layer3 = self._make_layer(block, planes=64, blocks=n, stride=2)
+        self.layer1 = self._make_layer(block, planes=inplanes * 2**0, blocks=n, stride=1)
+        self.layer2 = self._make_layer(block, planes=inplanes * 2**1, blocks=n, stride=2)
+        self.layer3 = self._make_layer(block, planes=inplanes * 2**2, blocks=n, stride=2)
         self.avgpool = nn.AvgPool2d(kernel_size=8)
-        self.fc = nn.Linear(in_features=64 * block.expansion, out_features=num_classes)
+        self.fc = nn.Linear(in_features=inplanes * 2**2 * block.expansion, out_features=num_classes)
 
         _initialize(self.modules())
 
@@ -166,3 +166,11 @@ def test_resnet():
         model = ResNet(depth=20, num_classes=num_classes)
         result = model.forward(torch.zeros((4, 3, 32, 32)))
         assert result.size() == (4, num_classes)
+
+
+def test_resnet():
+    import torch
+    num_classes = 10
+    model = ResNet(depth=20, num_classes=num_classes, inplanes=64)
+    result = model.forward(torch.zeros((4, 3, 32, 32)))
+    assert result.size() == (4, num_classes)

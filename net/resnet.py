@@ -168,7 +168,7 @@ def test_resnet():
         assert result.size() == (4, num_classes)
 
 
-def test_resnet():
+def test_resnet_custom_inplanes():
     import torch
     num_classes = 10
     model = ResNet(depth=20, num_classes=num_classes, inplanes=64)

@@ -32,14 +32,18 @@ class ContinuousSequenceSampler(Sampler):
             raise ValueError("random_state and seed cannot be used at the same time")
         self.rs = random_state if random_state is not None else random.Random(seed)
         self.subsequence_len_sampler = subsequence_len_sampler
-        self.iterators = {
-            group_id: iter(self.rs.sample(indices, k=len(indices)))  # permutation, sample without replacement
-            for group_id, indices in enumerate(sample_groups)
-        }
-        self.non_empty_groups = list(self.iterators.keys())
+        self.iterators = None
+        self.non_empty_groups = None
+        self.sample_groups = sample_groups
         self._len = sum([len(group) for group in sample_groups])
 
     def __iter__(self):
+        self.iterators = {
+            group_id: iter(self.rs.sample(indices, k=len(indices)))  # permutation, sample without replacement
+            for group_id, indices in enumerate(self.sample_groups)
+        }
+        self.non_empty_groups = list(self.iterators.keys())
+        
         while self.non_empty_groups:
             cl = self.rs.choice(self.non_empty_groups)
             it = self.iterators[cl]

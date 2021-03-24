@@ -11,16 +11,22 @@ from pytorch_nn_tools.train.tensor_io.tensor_io import TensorIO
 from pytorch_nn_tools.train.tensor_io.torch_tensor_io import TorchTensorIO
 
 
+class DummyLogger:
+    def debug(self, *args):
+        print(*args)
+
+
 class TrainerIO:
     def __init__(self, log_dir: Union[Path, str], experiment_name: str,
                  checkpoint_condition: Callable[[MetricType], bool],
-                 tensor_io: TensorIO = TorchTensorIO()):
+                 tensor_io: TensorIO = TorchTensorIO(),
+                 logger=DummyLogger()):
         self.log_dir = Path(log_dir)
         self.experiment_name = experiment_name
         self.path_experiment = self.log_dir.joinpath(experiment_name)
         self.path_checkpoints = self.path_experiment.joinpath("checkpoints")
 
-        self.checkpoint_saver = CheckpointSaver(self.path_checkpoints, logger=DummyLogger(), tensor_io=tensor_io)
+        self.checkpoint_saver = CheckpointSaver(self.path_checkpoints, logger=logger, tensor_io=tensor_io)
         self.checkpoint_condition = checkpoint_condition
 
         path_logs = self.path_experiment.joinpath(f"{self.experiment_name}_{now_as_str()}")
@@ -32,6 +38,7 @@ class TrainerIO:
 
     def load_last(self, start_epoch: int, end_epoch: int, model, optimizer, scheduler) -> int:
         last = self.checkpoint_saver.find_last(start_epoch, end_epoch)
+        print("last", last)
         if last is not None:
             print(f"found pretrained results for epoch {last}. Loading...")
             self.checkpoint_saver.load(model, optimizer, scheduler, last)
@@ -75,8 +82,3 @@ class PBars:
 def now_as_str():
     now = datetime.datetime.now()
     return now.strftime("%Y%m%d_%H%M%s_%f")
-
-
-class DummyLogger:
-    def debug(self, *args):
-        print(*args)
